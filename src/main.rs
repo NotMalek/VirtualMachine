@@ -1,51 +1,66 @@
-mod core;
-
-use core::vm::{VM, Instruction};
+use virtual_machine::core::{
+    vm::{VM, DebugOptions},
+    assembler::Assembler
+};
 
 fn main() {
-    // Program that defines and uses a function to calculate factorial
-    let program = vec![
-        // Define factorial function
-        Instruction::DefineFunction("factorial".into(), 1),  // One parameter
-        Instruction::BeginFunction,
-        Instruction::PushParam(0),                 // Get the parameter
-        Instruction::CreateLocal("n".into()),      // Store in local variable
+    let source = r#"
+        // Initialize counter
+                PUSH 5          // Initial value
+                STORE counter   // Store in memory
 
-        // If n <= 1, return 1
-        Instruction::LoadLocal("n".into()),
-        Instruction::Push(1),
-        Instruction::LessEqual,
-        Instruction::JumpIfZero(11),              // If n > 1, continue
-        Instruction::Push(1),                     // Return 1
-        Instruction::Return,
+        // Main loop
+        loop:   LOAD counter    // Get counter value
+                JMPZ done      // If counter is 0, we're done
 
-        // Else return n * factorial(n-1)
-        Instruction::LoadLocal("n".into()),        // Push n
-        Instruction::Push(1),
-        Instruction::Sub,                         // n - 1
-        Instruction::Call("factorial".into()),     // Recursive call
-        Instruction::LoadLocal("n".into()),        // Push n again
-        Instruction::Mul,                         // Multiply
-        Instruction::Return,
-        Instruction::EndFunction,
+                LOAD counter   // Load for decrement
+                PUSH 1        // Prepare for decrement
+                SUB          // counter -= 1
+                STORE counter // Save decremented value
 
-        // Main program
-        Instruction::Push(5),                     // Calculate 5!
-        Instruction::Call("factorial".into()),
-        Instruction::Halt,
-    ];
+                JMP loop      // Continue
 
-    let mut vm = VM::new(program);
-    vm.enable_debug();
+        done:   HALT          // Stop execution
+    "#;
 
-    println!("Calculating factorial of 5");
-    println!("--------------------------");
+    let mut assembler = Assembler::new();
+    match assembler.assemble(source) {
+        Ok(program) => {
+            println!("\nAssembly successful!");
 
-    while let Ok(true) = vm.step() {
-        if let Some(&value) = vm.get_state().stack.last() {
-            if matches!(vm.get_state().instructions().last(), Some(Instruction::Halt)) {
-                println!("\nResult: 5! = {}", value);
+            let mut vm = VM::new(program);
+
+            // Configure debug options
+            vm.set_debug_options(DebugOptions {
+                show_instructions: true,
+                show_stack: false,  // We'll track this manually
+                show_pc: false,     // Not needed for this demo
+                show_memory: false, // We'll track counter manually
+            });
+
+            println!("\nExecuting program:");
+            println!("-----------------");
+
+            let mut last_counter = None;
+            while let Ok(true) = vm.step() {
+                // Only show counter when it changes
+                if let Some(&value) = vm.get_state().memory.get("counter") {
+                    if last_counter != Some(value) {
+                        println!("Counter decremented to: {}", value);
+                        last_counter = Some(value);
+                    }
+                }
+            }
+
+            if let Some(&final_value) = vm.get_state().memory.get("counter") {
+                println!("\nProgram finished!");
+                println!("Final counter value: {}", final_value);
+
+                if final_value == 0 {
+                    println!("Successfully counted down to zero!");
+                }
             }
         }
+        Err(e) => println!("Assembly error: {}", e),
     }
 }

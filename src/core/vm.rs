@@ -1,6 +1,7 @@
 use crate::core::error::VMError;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Function {
@@ -68,6 +69,30 @@ pub enum Instruction {
     Halt,
 }
 
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Instruction::Push(n) => write!(f, "PUSH {}", n),
+            Instruction::Pop => write!(f, "POP"),
+            Instruction::Dup => write!(f, "DUP"),
+            Instruction::Swap => write!(f, "SWAP"),
+            Instruction::Add => write!(f, "ADD"),
+            Instruction::Sub => write!(f, "SUB"),
+            Instruction::Mul => write!(f, "MUL"),
+            Instruction::Div => write!(f, "DIV"),
+            Instruction::Load(var) => write!(f, "LOAD {}", var),
+            Instruction::Store(var) => write!(f, "STORE {}", var),
+            Instruction::Jump(addr) => write!(f, "JMP {}", addr),
+            Instruction::JumpIf(addr) => write!(f, "JMP_IF {}", addr),
+            Instruction::JumpIfZero(addr) => write!(f, "JMPZ {}", addr),
+            Instruction::JumpIfNotZero(addr) => write!(f, "JMPNZ {}", addr),
+            Instruction::Halt => write!(f, "HALT"),
+            // Add other instructions as needed
+            _ => write!(f, "{:?}", self),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct VMState {
     pub stack: Vec<i64>,
@@ -84,9 +109,17 @@ impl VMState {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct DebugOptions {
+    pub show_stack: bool,
+    pub show_pc: bool,
+    pub show_memory: bool,
+    pub show_instructions: bool,
+}
+
 pub struct VM {
     state: VMState,
-    debug_mode: bool,
+    debug_options: DebugOptions,
 }
 
 impl VM {
@@ -100,8 +133,12 @@ impl VM {
                 functions: HashMap::new(),
                 instructions,
             },
-            debug_mode: false,
+            debug_options: DebugOptions::default(),
         }
+    }
+
+    pub fn set_debug_options(&mut self, options: DebugOptions) {
+        self.debug_options = options;
     }
 
     pub fn step(&mut self) -> Result<bool, VMError> {
@@ -110,11 +147,21 @@ impl VM {
         }
 
         let instruction = self.state.instructions[self.state.program_counter].clone();
+
+        if self.debug_options.show_instructions {
+            println!("Executing: {}", instruction);
+        }
+
         self.execute_instruction(instruction)?;
 
-        if self.debug_mode {
+        if self.debug_options.show_stack {
             println!("Stack: {:?}", self.state.stack);
+        }
+        if self.debug_options.show_pc {
             println!("PC: {}", self.state.program_counter);
+        }
+        if self.debug_options.show_memory {
+            println!("Memory: {:?}", self.state.memory);
         }
 
         self.state.program_counter += 1;
@@ -274,7 +321,7 @@ impl VM {
                 }
             }
             Instruction::PushParam(index) => {
-                if let Some(frame) = self.state.call_stack.last() {
+                if let Some(_frame) = self.state.call_stack.last() {
                     let stack_pos = self.state.stack.len() - 1 - index;
                     if let Some(&value) = self.state.stack.get(stack_pos) {
                         self.state.stack.push(value);
@@ -301,7 +348,7 @@ impl VM {
             }
             Instruction::Return => {
                 if let Some(frame) = self.state.call_stack.pop() {
-                    self.state.program_counter = frame.return_address - 1; // -1 because step() will increment
+                    self.state.program_counter = frame.return_address - 1;
                     Ok(())
                 } else {
                     Err(VMError::EmptyCallStack)
@@ -311,16 +358,22 @@ impl VM {
         }
     }
 
-    pub fn enable_debug(&mut self) {
-        self.debug_mode = true;
-    }
-
     pub fn get_state(&self) -> &VMState {
         &self.state
     }
 
     pub fn get_memory(&self) -> &HashMap<String, i64> {
         &self.state.memory
+    }
+
+    // Return a reference to currently executing instruction if any
+    pub fn current_instruction(&self) -> Option<&Instruction> {
+        self.state.instructions.get(self.state.program_counter)
+    }
+
+    // Get the current call stack depth
+    pub fn call_stack_depth(&self) -> usize {
+        self.state.call_stack.len()
     }
 }
 
