@@ -1,66 +1,70 @@
-use virtual_machine::core::{
-    vm::{VM, DebugOptions},
-    assembler::Assembler
-};
+use virtual_machine::core::vm::{VM, DebugOptions, Instruction};
+use virtual_machine::core::assembler::Assembler;
 
 fn main() {
     let source = r#"
-        // Initialize counter
-                PUSH 5          // Initial value
-                STORE counter   // Store in memory
+        // Test I/O operations
+        PRINTSTR "=== I/O Test Program ===\n"
+        PRINTSTR "-------------------------\n"
 
-        // Main loop
-        loop:   LOAD counter    // Get counter value
-                JMPZ done      // If counter is 0, we're done
+        // Test character output
+        PRINTSTR "1. Character output: "
+        PUSH 65      // ASCII 'A'
+        PRINTCHAR
+        PUSH 10      // Newline
+        PRINTCHAR
 
-                LOAD counter   // Load for decrement
-                PUSH 1        // Prepare for decrement
-                SUB          // counter -= 1
-                STORE counter // Save decremented value
+        // Test numeric output
+        PRINTSTR "2. Number output: "
+        PUSH 42      // Number
+        PRINT
+        PUSH 10      // Newline
+        PRINTCHAR
 
-                JMP loop      // Continue
+        // Test string output
+        PRINTSTR "3. String output: Hello, World!\n"
 
-        done:   HALT          // Stop execution
+        PRINTSTR "-------------------------\n"
+        PRINTSTR "Program completed!\n"
+        HALT
     "#;
 
     let mut assembler = Assembler::new();
     match assembler.assemble(source) {
         Ok(program) => {
-            println!("\nAssembly successful!");
+            // Print debug header
+            println!("\n┌─────────────────────────────────────┐");
+            println!("│          VM Debug Output            │");
+            println!("├─────────────────────────────────────┤");
 
             let mut vm = VM::new(program);
-
-            // Configure debug options
             vm.set_debug_options(DebugOptions {
                 show_instructions: true,
-                show_stack: false,  // We'll track this manually
-                show_pc: false,     // Not needed for this demo
-                show_memory: false, // We'll track counter manually
+                show_stack: true,
+                show_pc: false,
+                show_memory: false,
             });
 
-            println!("\nExecuting program:");
-            println!("-----------------");
+            // Execute program
+            while let Ok(true) = vm.step() {}
 
-            let mut last_counter = None;
-            while let Ok(true) = vm.step() {
-                // Only show counter when it changes
-                if let Some(&value) = vm.get_state().memory.get("counter") {
-                    if last_counter != Some(value) {
-                        println!("Counter decremented to: {}", value);
-                        last_counter = Some(value);
-                    }
-                }
-            }
+            println!("└─────────────────────────────────────┘");
 
-            if let Some(&final_value) = vm.get_state().memory.get("counter") {
-                println!("\nProgram finished!");
-                println!("Final counter value: {}", final_value);
+            // Print program output
+            println!("\n┌─────────────────────────────────────┐");
+            println!("│          Program Output             │");
+            println!("└─────────────────────────────────────┘\n");
 
-                if final_value == 0 {
-                    println!("Successfully counted down to zero!");
-                }
-            }
+            // Join output and fix newlines
+            let output = vm.take_output().join("")
+                .replace("\\n", "\n");
+            print!("{}", output);
         }
-        Err(e) => println!("Assembly error: {}", e),
+        Err(e) => {
+            println!("\n┌─────────────────────────────────────┐");
+            println!("│          Assembly Error             │");
+            println!("└─────────────────────────────────────┘\n");
+            println!("Error: {}", e);
+        }
     }
 }

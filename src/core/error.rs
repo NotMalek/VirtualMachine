@@ -25,4 +25,10 @@ pub enum VMError {
 
     #[error("Invalid parameter index: {0}")]
     InvalidParameter(usize),
+
+    #[error("Invalid character code: {0}")]
+    InvalidCharacter(i64),
+
+    #[error("I/O error: {0}")]
+    IOError(String),
 }

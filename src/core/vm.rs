@@ -66,6 +66,12 @@ pub enum Instruction {
     PushParam(usize),
     Call(String),
     Return,
+
+    // I/O Operations
+    Print,      // Print number from top of stack
+    PrintChar,  // Print as ASCII character
+    PrintStr(String), // Print literal string
+
     Halt,
 }
 
@@ -86,8 +92,10 @@ impl fmt::Display for Instruction {
             Instruction::JumpIf(addr) => write!(f, "JMP_IF {}", addr),
             Instruction::JumpIfZero(addr) => write!(f, "JMPZ {}", addr),
             Instruction::JumpIfNotZero(addr) => write!(f, "JMPNZ {}", addr),
+            Instruction::Print => write!(f, "PRINT"),
+            Instruction::PrintChar => write!(f, "PRINTCHAR"),
+            Instruction::PrintStr(s) => write!(f, "PRINTSTR \"{}\"", s),
             Instruction::Halt => write!(f, "HALT"),
-            // Add other instructions as needed
             _ => write!(f, "{:?}", self),
         }
     }
@@ -120,6 +128,7 @@ pub struct DebugOptions {
 pub struct VM {
     state: VMState,
     debug_options: DebugOptions,
+    output_buffer: Vec<String>,
 }
 
 impl VM {
@@ -134,6 +143,7 @@ impl VM {
                 instructions,
             },
             debug_options: DebugOptions::default(),
+            output_buffer: Vec::new(),
         }
     }
 
@@ -348,11 +358,29 @@ impl VM {
             }
             Instruction::Return => {
                 if let Some(frame) = self.state.call_stack.pop() {
-                    self.state.program_counter = frame.return_address - 1;
+                    self.state.program_counter = frame.return_address - 1; // -1 because step() will increment
                     Ok(())
                 } else {
                     Err(VMError::EmptyCallStack)
                 }
+            }
+            Instruction::Print => {
+                let value = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                self.push_output(format!("{}", value));
+                Ok(())
+            }
+            Instruction::PrintChar => {
+                let value = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                if value < 0 || value > 127 {
+                    return Err(VMError::InvalidCharacter(value));
+                }
+                let ch = char::from_u32(value as u32).ok_or(VMError::InvalidCharacter(value))?;
+                self.push_output(format!("{}", ch));
+                Ok(())
+            }
+            Instruction::PrintStr(s) => {
+                self.push_output(s);
+                Ok(())
             }
             Instruction::Halt => Ok(()),
         }
@@ -374,6 +402,18 @@ impl VM {
     // Get the current call stack depth
     pub fn call_stack_depth(&self) -> usize {
         self.state.call_stack.len()
+    }
+
+    pub fn push_output(&mut self, output: String) {
+        // If debug is enabled, print immediately
+        if self.debug_options.show_instructions {
+            println!("Output: {}", output);
+        }
+        self.output_buffer.push(output);
+    }
+
+    pub fn take_output(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.output_buffer)
     }
 }
 
@@ -428,5 +468,22 @@ mod tests {
         while vm.step().unwrap() {}
 
         assert_eq!(vm.get_state().stack, vec![0, 1]);
+    }
+
+    #[test]
+    fn test_io_operations() {
+        let instructions = vec![
+            Instruction::Push(65),  // ASCII 'A'
+            Instruction::PrintChar,
+            Instruction::Push(42),
+            Instruction::Print,
+            Instruction::PrintStr("Hello\n".to_string()),
+        ];
+
+        let mut vm = VM::new(instructions);
+        while vm.step().unwrap() {}
+
+        let output = vm.take_output();
+        assert_eq!(output, vec!["A".to_string(), "42".to_string(), "Hello\n".to_string()]);
     }
 }

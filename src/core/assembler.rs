@@ -92,6 +92,10 @@ impl Assembler {
                 self.instructions.push(Instruction::Pop);
                 Ok(())
             }
+            "DUP" => {
+                self.instructions.push(Instruction::Dup);
+                Ok(())
+            }
             "ADD" => {
                 self.instructions.push(Instruction::Add);
                 Ok(())
@@ -163,6 +167,22 @@ impl Assembler {
             "HALT" => {
                 self.instructions.push(Instruction::Halt);
                 Ok(())
+            }
+            "PRINT" => {
+                self.instructions.push(Instruction::Print);
+                Ok(())
+            }
+            "PRINTCHAR" => {
+                self.instructions.push(Instruction::PrintChar);
+                Ok(())
+            }
+            "PRINTSTR" => {
+                if let Some(Token::String(s)) = line.operands.get(0) {
+                    self.instructions.push(Instruction::PrintStr(s.clone()));
+                    Ok(())
+                } else {
+                    Err("PRINTSTR requires a string operand".to_string())
+                }
             }
             _ => Err(format!("Unknown instruction: {}", line.instruction))
         }
