@@ -31,4 +31,16 @@ pub enum VMError {
 
     #[error("I/O error: {0}")]
     IOError(String),
+
+    #[error("Invalid heap address: {0}")]
+    InvalidHeapAddress(usize),
+
+    #[error("Invalid array index: {0}")]
+    InvalidArrayIndex(i64),
+
+    #[error("Array bounds error: index {0} out of bounds {1}")]
+    ArrayBoundsError(i64, usize),
+
+    #[error("Type error: expected {0}, found {1}")]
+    TypeError(String, String),
 }

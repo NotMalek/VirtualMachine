@@ -8,7 +8,7 @@ use nom::{
     sequence::{delimited, pair, terminated}
 };
 use std::collections::HashMap;
-use super::vm::Instruction;
+use crate::core::instruction::Instruction;
 
 /// Represents a token in the assembly language
 #[derive(Debug, PartialEq)]
@@ -68,7 +68,6 @@ impl Assembler {
             .filter(|l| !l.trim().is_empty() && !l.trim().starts_with("//"))
         {
             if let Ok((_, asm_line)) = parse_line(line_str.trim()) {
-                // Only process if there's an actual instruction
                 if !asm_line.instruction.is_empty() {
                     self.process_instruction(asm_line)?;
                 }
@@ -80,6 +79,7 @@ impl Assembler {
 
     fn process_instruction(&mut self, line: AsmLine) -> Result<(), String> {
         match line.instruction.as_str() {
+            // Stack Operations
             "PUSH" => {
                 if let Some(Token::Number(n)) = line.operands.get(0) {
                     self.instructions.push(Instruction::Push(*n));
@@ -96,6 +96,12 @@ impl Assembler {
                 self.instructions.push(Instruction::Dup);
                 Ok(())
             }
+            "SWAP" => {
+                self.instructions.push(Instruction::Swap);
+                Ok(())
+            }
+
+            // Arithmetic Operations
             "ADD" => {
                 self.instructions.push(Instruction::Add);
                 Ok(())
@@ -112,6 +118,8 @@ impl Assembler {
                 self.instructions.push(Instruction::Div);
                 Ok(())
             }
+
+            // Memory Operations
             "LOAD" => {
                 if let Some(Token::Identifier(name)) = line.operands.get(0) {
                     self.instructions.push(Instruction::Load(name.clone()));
@@ -128,6 +136,52 @@ impl Assembler {
                     Err("STORE requires an identifier operand".to_string())
                 }
             }
+
+            // Array Operations
+            "NEWARRAY" => {
+                self.instructions.push(Instruction::NewArray);
+                Ok(())
+            }
+            "ARRAYGET" => {
+                self.instructions.push(Instruction::ArrayGet);
+                Ok(())
+            }
+            "ARRAYSET" => {
+                self.instructions.push(Instruction::ArraySet);
+                Ok(())
+            }
+            "ARRAYLEN" => {
+                self.instructions.push(Instruction::ArrayLength);
+                Ok(())
+            }
+            "FREEARR" => {
+                self.instructions.push(Instruction::FreeArray);
+                Ok(())
+            }
+
+            // String Operations
+            "NEWSTR" => {
+                if let Some(Token::String(s)) = line.operands.get(0) {
+                    self.instructions.push(Instruction::NewString(s.clone()));
+                    Ok(())
+                } else {
+                    Err("NEWSTR requires a string operand".to_string())
+                }
+            }
+            "STRCAT" => {
+                self.instructions.push(Instruction::StringConcat);
+                Ok(())
+            }
+            "STRLEN" => {
+                self.instructions.push(Instruction::StringLength);
+                Ok(())
+            }
+            "FREESTR" => {
+                self.instructions.push(Instruction::FreeString);
+                Ok(())
+            }
+
+            // Control Flow
             "JMP" => {
                 if let Some(Token::Identifier(label)) = line.operands.get(0) {
                     if let Some(&address) = self.labels.get(label) {
@@ -164,10 +218,8 @@ impl Assembler {
                     Err("JMPNZ requires a label operand".to_string())
                 }
             }
-            "HALT" => {
-                self.instructions.push(Instruction::Halt);
-                Ok(())
-            }
+
+            // I/O Operations
             "PRINT" => {
                 self.instructions.push(Instruction::Print);
                 Ok(())
@@ -184,6 +236,11 @@ impl Assembler {
                     Err("PRINTSTR requires a string operand".to_string())
                 }
             }
+            "HALT" => {
+                self.instructions.push(Instruction::Halt);
+                Ok(())
+            }
+
             _ => Err(format!("Unknown instruction: {}", line.instruction))
         }
     }
@@ -290,14 +347,28 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_instruction() {
-        let (_, token) = instruction("ADD").unwrap();
-        assert_eq!(token, Token::Instruction("ADD".to_string()));
-    }
+    fn test_array_operations() {
+        let source = r#"
+            // Create and initialize array
+            PUSH 5       // array size
+            NEWARRAY
+            STORE arr
 
-    #[test]
-    fn test_parse_number() {
-        let (_, num) = number("42").unwrap();
-        assert_eq!(num, 42);
+            // Set array[0] = 42
+            LOAD arr
+            PUSH 0
+            PUSH 42
+            ARRAYSET
+
+            // Get array[0]
+            LOAD arr
+            PUSH 0
+            ARRAYGET
+            PRINT
+        "#;
+
+        let mut assembler = Assembler::new();
+        let result = assembler.assemble(source);
+        assert!(result.is_ok());
     }
 }

@@ -1,42 +1,19 @@
-use virtual_machine::core::vm::{VM, DebugOptions, Instruction};
-use virtual_machine::core::assembler::Assembler;
+use crate::core::vm::VM;
+use crate::core::state::DebugOptions; // Correct import path
+use crate::core::assembler::Assembler;
 
-fn main() {
-    let source = r#"
-        // Test I/O operations
-        PRINTSTR "=== I/O Test Program ===\n"
-        PRINTSTR "-------------------------\n"
+mod core;
+mod examples;
 
-        // Test character output
-        PRINTSTR "1. Character output: "
-        PUSH 65      // ASCII 'A'
-        PRINTCHAR
-        PUSH 10      // Newline
-        PRINTCHAR
-
-        // Test numeric output
-        PRINTSTR "2. Number output: "
-        PUSH 42      // Number
-        PRINT
-        PUSH 10      // Newline
-        PRINTCHAR
-
-        // Test string output
-        PRINTSTR "3. String output: Hello, World!\n"
-
-        PRINTSTR "-------------------------\n"
-        PRINTSTR "Program completed!\n"
-        HALT
-    "#;
+fn run_program(source: &str, name: &str) {
+    println!("\n=== Running {} Example ===", name);
+    println!("Source code:");
+    println!("{}", source);
+    println!("\nOutput:");
 
     let mut assembler = Assembler::new();
     match assembler.assemble(source) {
         Ok(program) => {
-            // Print debug header
-            println!("\n┌─────────────────────────────────────┐");
-            println!("│          VM Debug Output            │");
-            println!("├─────────────────────────────────────┤");
-
             let mut vm = VM::new(program);
             vm.set_debug_options(DebugOptions {
                 show_instructions: true,
@@ -45,26 +22,27 @@ fn main() {
                 show_memory: false,
             });
 
-            // Execute program
             while let Ok(true) = vm.step() {}
 
-            println!("└─────────────────────────────────────┘");
-
-            // Print program output
-            println!("\n┌─────────────────────────────────────┐");
-            println!("│          Program Output             │");
-            println!("└─────────────────────────────────────┘\n");
-
-            // Join output and fix newlines
             let output = vm.take_output().join("")
                 .replace("\\n", "\n");
             print!("{}", output);
         }
         Err(e) => {
-            println!("\n┌─────────────────────────────────────┐");
-            println!("│          Assembly Error             │");
-            println!("└─────────────────────────────────────┘\n");
-            println!("Error: {}", e);
+            println!("Assembly Error: {}", e);
         }
     }
+    println!("\n=== End of {} Example ===\n", name);
+}
+
+fn main() {
+    println!("Virtual Machine Example Programs");
+    println!("===============================");
+
+    // Run each example program
+    run_program(examples::io_test::SOURCE, "I/O Operations");
+    run_program(examples::array_test::SOURCE, "Array Operations");
+    run_program(examples::string_test::SOURCE, "String Operations");
+    run_program(examples::arithmetic_test::SOURCE, "Arithmetic Operations");
+    run_program(examples::control_test::SOURCE, "Control Flow");
 }
