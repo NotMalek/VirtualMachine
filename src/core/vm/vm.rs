@@ -1,7 +1,7 @@
 use crate::core::instruction::Instruction;
 use crate::core::error::VMError;
 use crate::core::state::{VMState, DebugOptions};
-use crate::core::heap::HeapValue; // Remove `HeapManager` if unused
+use crate::core::heap::HeapValue;
 use std::collections::HashMap;
 
 pub struct VM {
@@ -31,22 +31,25 @@ impl VM {
         let instruction = self.state.instructions()[self.state.program_counter].clone();
 
         if self.debug_options.show_instructions {
-            println!("Executing: {}", instruction);
+            println!("Executing instruction at PC {}: {:?}", self.state.program_counter, instruction);
+            println!("Current stack: {:?}", self.state.stack);
         }
 
-        self.execute_instruction(instruction)?;
-
-        if self.debug_options.show_stack {
-            println!("Stack: {:?}", self.state.stack);
-        }
-        if self.debug_options.show_pc {
-            println!("PC: {}", self.state.program_counter);
-        }
-        if self.debug_options.show_memory {
-            println!("Memory: {:?}", self.state.memory);
+        // Execute the instruction
+        if let Err(e) = self.execute_instruction(instruction.clone()) {
+            if self.debug_options.show_instructions {
+                println!("Error executing instruction: {:?}", e);
+            }
+            return Err(e);
         }
 
         self.state.program_counter += 1;
+
+        // Check for halt after executing the instruction
+        if matches!(instruction, Instruction::Halt) {
+            return Ok(false);
+        }
+
         Ok(true)
     }
 
@@ -84,15 +87,33 @@ impl VM {
                 self.state.stack.swap(len - 1, len - 2);
                 Ok(())
             }
-            Instruction::Add => self.binary_op(|a, b| Ok(a + b)),
-            Instruction::Sub => self.binary_op(|a, b| Ok(a - b)),
-            Instruction::Mul => self.binary_op(|a, b| Ok(a * b)),
-            Instruction::Div => self.binary_op(|a, b| {
+            Instruction::Add => {
+                let b = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                let a = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                self.state.stack.push(a + b);
+                Ok(())
+            }
+            Instruction::Sub => {
+                let b = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                let a = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                self.state.stack.push(a - b);
+                Ok(())
+            }
+            Instruction::Mul => {
+                let b = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                let a = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                self.state.stack.push(a * b);
+                Ok(())
+            }
+            Instruction::Div => {
+                let b = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                let a = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
                 if b == 0 {
                     return Err(VMError::DivisionByZero);
                 }
-                Ok(a / b)
-            }),
+                self.state.stack.push(a / b);
+                Ok(())
+            }
             Instruction::Store(name) => {
                 let value = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
                 self.state.memory.insert(name, value);
@@ -109,6 +130,26 @@ impl VM {
                     return Err(VMError::InvalidInstruction(target));
                 }
                 self.state.program_counter = target - 1; // -1 because step() will increment
+                Ok(())
+            }
+            Instruction::JumpIfZero(target) => {
+                let condition = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                if condition == 0 {
+                    if target >= self.state.instructions().len() {
+                        return Err(VMError::InvalidInstruction(target));
+                    }
+                    self.state.program_counter = target - 1;
+                }
+                Ok(())
+            }
+            Instruction::JumpIfNotZero(target) => {
+                let condition = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                if condition != 0 {
+                    if target >= self.state.instructions().len() {
+                        return Err(VMError::InvalidInstruction(target));
+                    }
+                    self.state.program_counter = target - 1;
+                }
                 Ok(())
             }
             Instruction::JumpIf(target) => {
@@ -132,6 +173,21 @@ impl VM {
             Instruction::Not => {
                 let value = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
                 self.state.stack.push(if value == 0 { 1 } else { 0 });
+                Ok(())
+            }
+            Instruction::Print => {
+                let value = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                self.push_output(format!("{}\n", value));
+                Ok(())
+            }
+            Instruction::PrintStr(s) => {
+                let unescaped = s.replace("\\n", "\n");
+                self.push_output(unescaped);
+                Ok(())
+            }
+            Instruction::PrintChar => {
+                let value = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
+                self.push_output((value as u8 as char).to_string());
                 Ok(())
             }
             Instruction::NewArray => {
@@ -218,7 +274,6 @@ impl VM {
                 self.state.stack.push(result_id as i64);
                 Ok(())
             }
-
             Instruction::StringLength => {
                 let string_id = self.state.stack.pop().ok_or(VMError::StackUnderflow)? as usize;
 
@@ -229,7 +284,6 @@ impl VM {
                     Err(VMError::TypeError("string".into(), "non-string".into()))
                 }
             }
-
             Instruction::FreeString => {
                 let string_id = self.state.stack.pop().ok_or(VMError::StackUnderflow)? as usize;
 
@@ -239,7 +293,7 @@ impl VM {
                     Err(VMError::InvalidHeapAddress(string_id))
                 }
             }
-
+            Instruction::Halt => Ok(()),
             _ => Err(VMError::InvalidInstruction(self.state.program_counter)),
         }
     }
@@ -252,18 +306,15 @@ impl VM {
         &self.state.memory
     }
 
-    // Return a reference to currently executing instruction if any
     pub fn current_instruction(&self) -> Option<&Instruction> {
         self.state.instructions().get(self.state.program_counter)
     }
 
-    // Get the current call stack depth
     pub fn call_stack_depth(&self) -> usize {
         self.state.call_stack.len()
     }
 
     pub fn push_output(&mut self, output: String) {
-        // If debug is enabled, print immediately
         if self.debug_options.show_instructions {
             println!("Output: {}", output);
         }

@@ -1,20 +1,61 @@
-use crate::core::vm::VM;
-use crate::core::state::DebugOptions; // Correct import path
-use crate::core::assembler::Assembler;
+use virtual_machine::core::vm::VM;
+use virtual_machine::core::assembler::Assembler;
+use virtual_machine::core::state::DebugOptions;
 
-mod core;
-mod examples;
+fn main() {
+    // Create a sample program that demonstrates various VM features
+    let source = r#"
+        // Basic arithmetic
+        PUSH 10
+        PUSH 5
+        ADD
+        PRINT
 
-fn run_program(source: &str, name: &str) {
-    println!("\n=== Running {} Example ===", name);
-    println!("Source code:");
-    println!("{}", source);
-    println!("\nOutput:");
+        // Store and load
+        PUSH 42
+        STORE x
+        LOAD x
+        PRINT
 
+        // Array operations
+        PUSH 3       // array size
+        NEWARRAY
+
+        // Store some values
+        DUP
+        PUSH 0
+        PUSH 100
+        ARRAYSET
+
+        DUP
+        PUSH 1
+        PUSH 200
+        ARRAYSET
+
+        // Read and print a value
+        DUP
+        PUSH 1
+        ARRAYGET
+        PRINT
+
+        // String operations
+        NEWSTRING "Hello, "
+        NEWSTRING "VM!"
+        STRINGCONCAT
+        PRINT
+
+        HALT
+    "#;
+
+    println!("Starting VM with sample program...\n");
+
+    // Create assembler and VM instances
     let mut assembler = Assembler::new();
     match assembler.assemble(source) {
         Ok(program) => {
             let mut vm = VM::new(program);
+
+            // Optional: Enable debug options to see what's happening
             vm.set_debug_options(DebugOptions {
                 show_instructions: true,
                 show_stack: true,
@@ -22,27 +63,17 @@ fn run_program(source: &str, name: &str) {
                 show_memory: false,
             });
 
+            // Run the program
+            println!("Executing program...\n");
             while let Ok(true) = vm.step() {}
 
-            let output = vm.take_output().join("")
-                .replace("\\n", "\n");
-            print!("{}", output);
+            println!("\nProgram output:");
+            for output in vm.take_output() {
+                println!("{}", output);
+            }
         }
         Err(e) => {
-            println!("Assembly Error: {}", e);
+            println!("Failed to assemble program: {:?}", e);
         }
     }
-    println!("\n=== End of {} Example ===\n", name);
-}
-
-fn main() {
-    println!("Virtual Machine Example Programs");
-    println!("===============================");
-
-    // Run each example program
-    run_program(examples::io_test::SOURCE, "I/O Operations");
-    run_program(examples::array_test::SOURCE, "Array Operations");
-    run_program(examples::string_test::SOURCE, "String Operations");
-    run_program(examples::arithmetic_test::SOURCE, "Arithmetic Operations");
-    run_program(examples::control_test::SOURCE, "Control Flow");
 }

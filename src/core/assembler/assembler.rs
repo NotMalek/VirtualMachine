@@ -118,6 +118,22 @@ impl Assembler {
                 self.instructions.push(Instruction::Div);
                 Ok(())
             }
+            "LT" => {
+                self.instructions.push(Instruction::LessThan);
+                Ok(())
+            },
+            "LE" => {
+                self.instructions.push(Instruction::LessEqual);
+                Ok(())
+            },
+            "GT" => {
+                self.instructions.push(Instruction::GreaterThan);
+                Ok(())
+            },
+            "GE" => {
+                self.instructions.push(Instruction::GreaterEqual);
+                Ok(())
+            },
 
             // Memory Operations
             "LOAD" => {
