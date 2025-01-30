@@ -183,6 +183,8 @@ PRINT       // Outputs: Hello, VM!
 
 ## Web Interface
 
+![image](https://github.com/user-attachments/assets/72d81d1a-ed66-47e5-b186-7e403812d814)
+
 
 The web interface provides:
 - Code editor with syntax highlighting
