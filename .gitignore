@@ -32,13 +32,6 @@ Thumbs.db
 # PowerShell script backups
 *.ps1.bk
 
-# TypeScript and Next.js configuration
-frontend/tsconfig.json
-frontend/eslint.config.mjs
-frontend/tailwind.config.ts
-frontend/next-env.d.ts
-frontend/postcss.config.mjs
-
 # Next.js build artifacts
 frontend/.next/cache/
 frontend/.next/server/
