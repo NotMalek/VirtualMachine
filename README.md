@@ -184,7 +184,11 @@ PRINT       // Outputs: Hello, VM!
 
 ## Web Interface
 
-![image](https://github.com/user-attachments/assets/72d81d1a-ed66-47e5-b186-7e403812d814)
+![virtualMachine](https://github.com/user-attachments/assets/2591b1b6-8008-4974-aa84-015bd2e0fda1)
+
+## Instructions
+
+![image](https://github.com/user-attachments/assets/57e505f4-4e34-4028-92ff-e250c19bd2e8)
 
 
 The web interface provides:
@@ -194,4 +198,6 @@ The web interface provides:
 - Program output display
 - Step-by-step execution controls
 - Sample programs
+- Instructions
+  
 
