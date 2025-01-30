@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --terminal-green: #00ff00;
+    --terminal-dark-green: #003300;
+    --background-black: #000000;
+}
+
+body {
+    background-color: var(--background-black);
+    color: var(--terminal-green);
+    font-family: 'Courier New', Courier, monospace;
+}
+
+@layer components {
+    .terminal-window {
+        @apply border border-green-500 bg-black p-4 rounded;
+    }
+
+    .terminal-text {
+        @apply text-green-400 font-mono;
+    }
+
+    .terminal-heading {
+        @apply text-green-500 text-xl mb-2 font-mono;
+    }
+
+    .terminal-button {
+        @apply px-4 py-2 bg-green-800 text-green-100 hover:bg-green-700
+        transition-colors font-mono border border-green-500;
+    }
+}
+
+/* Custom scrollbar for terminal feel */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--background-black);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--terminal-green);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--terminal-dark-green);
+}
