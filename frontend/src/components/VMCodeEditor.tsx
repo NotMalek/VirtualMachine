@@ -1,87 +1,44 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import Editor from '@monaco-editor/react';
+import { examplePrograms } from '../data/examplePrograms';
 
 interface VMCodeEditorProps {
     value: string;
     onChange: (value: string) => void;
 }
 
-const SAMPLE_PROGRAMS = {
-    basic: `// Basic arithmetic
-PUSH 10
-PUSH 5
-ADD
-PRINT
-HALT`,
-
-    array: `// Array operations
-PUSH 3       // array size
-NEWARRAY
-
-// Store some values
-DUP
-PUSH 0
-PUSH 100
-ARRAYSET
-
-DUP
-PUSH 1
-PUSH 200
-ARRAYSET
-
-// Read and print a value
-DUP
-PUSH 1
-ARRAYGET
-PRINT       // Prints the number
-HALT`,
-
-    strings: `// String operations
-PRINTSTR "Starting string demo..."
-NEWSTR "Hello, "
-NEWSTR "VM!"
-STRCAT    // Concatenates the strings
-PRINT     // Should print the concatenated string
-PRINTSTR "Done!"
-HALT`
-} as const;
-
-// Type for our sample program keys
-type SampleProgramKey = keyof typeof SAMPLE_PROGRAMS;
-
 export const VMCodeEditor: React.FC<VMCodeEditorProps> = ({ value, onChange }) => {
-    // Function to load a sample program
-    const loadSampleProgram = (program: SampleProgramKey) => {
-        onChange(SAMPLE_PROGRAMS[program]);
+    const [selectedCategory, setSelectedCategory] = useState<string>('basic');
+
+    const loadSampleProgram = (program: keyof typeof examplePrograms) => {
+        onChange(examplePrograms[program]);
+        setSelectedCategory(program);
     };
 
     return (
         <div className="space-y-4">
-            <div className="flex gap-2">
-                <button
-                    className="terminal-button text-sm"
-                    onClick={() => loadSampleProgram('basic')}
-                >
-                    Load Basic Example
-                </button>
-                <button
-                    className="terminal-button text-sm"
-                    onClick={() => loadSampleProgram('array')}
-                >
-                    Load Array Example
-                </button>
-                <button
-                    className="terminal-button text-sm"
-                    onClick={() => loadSampleProgram('strings')}
-                >
-                    Load String Example
-                </button>
+            <div className="flex flex-wrap gap-2">
+                {Object.entries(examplePrograms).map(([key, _]) => (
+                    <button
+                        key={key}
+                        className={`terminal-button text-sm px-3 py-1
+              ${selectedCategory === key ? 'bg-green-700' : ''}`}
+                        onClick={() => loadSampleProgram(key as keyof typeof examplePrograms)}
+                    >
+                        {key.charAt(0).toUpperCase() + key.slice(1)}
+                    </button>
+                ))}
             </div>
 
-            <div className="border border-green-500">
+            <div className="border border-green-500 relative">
+                <div className="absolute top-0 right-0 z-10 p-1">
+          <span className="text-xs text-green-600 bg-black px-2 py-1 rounded-bl">
+            Assembly Editor
+          </span>
+                </div>
                 <Editor
                     height="300px"
-                    defaultLanguage="cpp"
+                    defaultLanguage="cpp" // Close enough for our assembly syntax
                     theme="vs-dark"
                     value={value}
                     onChange={(value) => onChange(value || '')}
@@ -93,6 +50,10 @@ export const VMCodeEditor: React.FC<VMCodeEditorProps> = ({ value, onChange }) =
                         lineNumbers: 'on',
                         renderLineHighlight: 'all',
                         wordWrap: 'on',
+                        glyphMargin: true,
+                        folding: true,
+                        lineDecorationsWidth: 10,
+                        lineNumbersMinChars: 3,
                     }}
                 />
             </div>
