@@ -11,7 +11,8 @@ const SAMPLE_PROGRAMS = {
 PUSH 10
 PUSH 5
 ADD
-PRINT`,
+PRINT
+HALT`,
 
     array: `// Array operations
 PUSH 3       // array size
@@ -32,13 +33,17 @@ ARRAYSET
 DUP
 PUSH 1
 ARRAYGET
-PRINT`,
+PRINT       // Prints the number
+HALT`,
 
     strings: `// String operations
-NEWSTRING "Hello, "
-NEWSTRING "VM!"
-STRINGCONCAT
-PRINT`
+PRINTSTR "Starting string demo..."
+NEWSTR "Hello, "
+NEWSTR "VM!"
+STRCAT    // Concatenates the strings
+PRINT     // Should print the concatenated string
+PRINTSTR "Done!"
+HALT`
 } as const;
 
 // Type for our sample program keys

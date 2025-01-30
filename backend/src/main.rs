@@ -78,18 +78,13 @@ async fn step(data: web::Data<AppState>) -> Result<HttpResponse> {
     if let Some(vm) = vm_state.as_mut() {
         println!("VM found, executing step");
         match vm.step() {
-            Ok(true) => {  // Program still running
+            Ok(continue_execution) => {
                 let state = vm.get_state();
                 let mut response = VMStateResponse::from(state);
-                response.output = vm.take_output();
-                println!("Step executed successfully");
-                Ok(HttpResponse::Ok().json(response))
-            }
-            Ok(false) => {  // Program completed
-                let state = vm.get_state();
-                let mut response = VMStateResponse::from(state);
-                response.output = vm.take_output();
-                println!("Program completed");
+                let output = vm.take_output();
+                println!("Current output: {:?}", output);  // Debug log
+                response.output = output;
+                println!("Response being sent: {:?}", response);  // Debug log
                 Ok(HttpResponse::Ok().json(response))
             }
             Err(e) => {

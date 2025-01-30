@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { VMCodeEditor } from './VMCodeEditor';
+import { VMInstructionsModal } from './VMInstructionsModal';
 
 interface VMControlsProps {
     onStep: () => void;
@@ -15,9 +16,11 @@ export const VMControls: React.FC<VMControlsProps> = ({
                                                           onRun,
                                                           onReset,
                                                           onLoad,
-                                                          isRunning
+                                                          isRunning,
+                                                          isProgramComplete
                                                       }) => {
     const [code, setCode] = useState('');
+    const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
 
     const handleLoadClick = () => {
         onLoad(code);
@@ -25,20 +28,29 @@ export const VMControls: React.FC<VMControlsProps> = ({
 
     return (
         <div className="terminal-window">
-            <h2 className="terminal-heading">Controls</h2>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="terminal-heading">Controls</h2>
+                <button
+                    className="terminal-button text-sm"
+                    onClick={() => setIsInstructionsOpen(true)}
+                >
+                    Instructions Reference
+                </button>
+            </div>
+
             <div className="space-y-4">
                 <div className="flex gap-4">
                     <button
                         className="terminal-button"
                         onClick={onStep}
-                        disabled={isRunning}
+                        disabled={isRunning || isProgramComplete}
                     >
                         Step
                     </button>
                     <button
                         className="terminal-button"
                         onClick={onRun}
-                        disabled={isRunning}
+                        disabled={isRunning || isProgramComplete}
                     >
                         Run
                     </button>
@@ -62,6 +74,11 @@ export const VMControls: React.FC<VMControlsProps> = ({
                     Load Program
                 </button>
             </div>
+
+            <VMInstructionsModal
+                isOpen={isInstructionsOpen}
+                onClose={() => setIsInstructionsOpen(false)}
+            />
         </div>
     );
 };

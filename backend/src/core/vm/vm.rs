@@ -177,7 +177,16 @@ impl VM {
             }
             Instruction::Print => {
                 let value = self.state.stack.pop().ok_or(VMError::StackUnderflow)?;
-                self.push_output(format!("{}\n", value));
+                // Check if the value is a heap reference
+                if let Some(heap_value) = self.state.heap.get(value as usize) {
+                    match heap_value {
+                        HeapValue::String(s) => self.push_output(format!("{}", s)),
+                        HeapValue::Array(arr) => self.push_output(format!("{:?}", arr)),
+                    }
+                } else {
+                    // If not a heap reference, print as a regular number
+                    self.push_output(format!("{}", value));
+                }
                 Ok(())
             }
             Instruction::PrintStr(s) => {

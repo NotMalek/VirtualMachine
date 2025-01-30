@@ -115,43 +115,55 @@ export default function VMInterface() {
     };
 
     return (
-        <div className="min-h-screen bg-black p-6 font-mono">
-            {error && (
-                <div className="mb-6 p-4 border border-red-500 bg-red-900/20 text-red-500">
-                    {error}
-                </div>
-            )}
+        <div className="min-h-screen bg-black p-6 font-mono flex flex-col h-screen">
+            {/* Main Content */}
+            <div className="flex-grow">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                        <VMStack stack={vmState.stack} />
+                        <VMMemory memory={vmState.memory} />
+                    </div>
 
-            {isProgramComplete && (
-                <div className="mb-6 p-4 border border-green-500 bg-green-900/20 text-green-500">
-                    Program completed successfully
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-6">
-                    <VMStack stack={vmState.stack} />
-                    <VMMemory memory={vmState.memory} />
+                    <div className="space-y-6">
+                        <VMInstructions
+                            instructions={vmState.instructions}
+                            programCounter={vmState.programCounter}
+                        />
+                        <VMOutput output={vmState.output} />
+                    </div>
                 </div>
 
-                <div className="space-y-6">
-                    <VMInstructions
-                        instructions={vmState.instructions}
-                        programCounter={vmState.programCounter}
+                <div className="mt-6">
+                    <VMControls
+                        onStep={handleStep}
+                        onRun={handleRun}
+                        onReset={handleReset}
+                        onLoad={handleLoadProgram}
+                        isRunning={isRunning}
+                        isProgramComplete={isProgramComplete}
                     />
-                    <VMOutput output={vmState.output} />
                 </div>
             </div>
 
-            <div className="mt-6">
-                <VMControls
-                    onStep={handleStep}
-                    onRun={handleRun}
-                    onReset={handleReset}
-                    onLoad={handleLoadProgram}
-                    isRunning={isRunning}
-                    isProgramComplete={isProgramComplete}
-                />
+            {/* Status Bar */}
+            <div className="mt-6 sticky bottom-0">
+                {error && (
+                    <div className="p-4 border border-red-500 bg-black text-red-500 rounded-lg shadow-lg">
+                        {error}
+                    </div>
+                )}
+
+                {isProgramComplete && !error && (
+                    <div className="p-4 border border-green-500 bg-black text-green-500 rounded-lg shadow-lg">
+                        Program completed successfully
+                    </div>
+                )}
+
+                {isRunning && !error && !isProgramComplete && (
+                    <div className="p-4 border border-yellow-500 bg-black text-yellow-500 rounded-lg shadow-lg">
+                        Program running...
+                    </div>
+                )}
             </div>
         </div>
     );
