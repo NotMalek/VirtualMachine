@@ -178,7 +178,8 @@ PRINT       // Outputs: Hello, VM!
     │   ├── services/
     │   ├── types/
     │   └── app/
-    └── package.json
+    ├──  package.json
+    └── tsconfig.json
 ```
 
 ## Web Interface
