@@ -54,7 +54,7 @@ Visualization          Execution
 1. Clone the repository:
 ```bash
 git clone https://github.com/NotMalek/virtual-machine.git
-cd virtual-machine
+cd backend
 ```
 
 2. Install backend dependencies:
