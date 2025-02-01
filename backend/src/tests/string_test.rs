@@ -1,33 +1,38 @@
-use crate::core::vm::VM;
-use crate::core::assembler::Assembler;
+use super::VMTester;
 
-pub const SOURCE: &str = r#"
-    NEWSTR "Hello"
-    STORE str1
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    NEWSTR " World!"
-    STORE str2
+    #[test]
+    fn test_empty_string_operations() {
+        const SOURCE: &str = r#"
+        // Test empty string length
+        start:  NEWSTR ""
+                STORE s1
 
-    LOAD str1
-    LOAD str2
-    STRCAT
-    STORE result
+        // Get and print empty string length
+        loop1:  LOAD s1
+                STRLEN
+                PRINT
+                PRINTSTR "\n"
 
-    LOAD result
-    STRLEN
-    PRINT
+        // Concatenate with non-empty string
+        loop2:  LOAD s1
+                NEWSTR "Hello"
+                STRCAT
+                DUP
+                STRLEN
+                PRINT
+                PRINTSTR "\n"
 
-    HALT
-"#;
+        end:    HALT
+        "#;
 
-#[test]
-pub fn test_string_operations() {
-    let mut assembler = Assembler::new();
-    let program = assembler.assemble(SOURCE).unwrap();
-    let mut vm = VM::new(program);
+        let mut tester = VMTester::new(SOURCE, false)
+            .expect("Failed to create VM tester");
 
-    while let Ok(true) = vm.step() {}
-
-    let output = vm.take_output().join("");
-    assert_eq!(output, "12\n");
+        tester.run().expect("Failed to execute program");
+        assert_eq!(tester.get_output(), "0\n5\n");
+    }
 }

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
-// use crate::core::error::VMError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum HeapValue {

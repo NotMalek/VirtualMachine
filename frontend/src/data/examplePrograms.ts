@@ -1,14 +1,15 @@
 export const examplePrograms = {
     // Basic Operations
     basic: `// Basic Arithmetic
-PUSH 10
-PUSH 5
-ADD        // 10 + 5
-PRINT      // Output: 15
-PUSH 3
-MUL        // 15 * 3
-PRINT      // Output: 45
-HALT`,
+PUSH 10     // Push first operand
+PUSH 5      // Push second operand
+ADD         // Add them -> 15
+DUP         // Duplicate 15 for later use
+PRINT       // Print the first 15
+PUSH 3      // Push multiplier
+MUL         // Multiply 15 * 3 -> 45
+PRINT       // Print the result
+HALT        // Stop execution`,
 
     // Memory and Variables
     memory: `// Memory Operations
@@ -99,18 +100,21 @@ HALT`,
     comparison: `// Comparison Operations
 PUSH 10
 PUSH 20
-LessThan     // 10 < 20
-PRINT        // Output: 1 (true)
+LT            // 10 < 20
+PRINT         // Output: 1 (true)
+PRINTSTR "\n"
 
 PUSH 30
 PUSH 30
-Equal        // 30 == 30
-PRINT        // Output: 1 (true)
+LE            // 30 <= 30
+PRINT         // Output: 1 (true)
+PRINTSTR "\n"
 
 PUSH 50
 PUSH 40
-GreaterThan  // 50 > 40
-PRINT        // Output: 1 (true)
+GT            // 50 > 40
+PRINT         // Output: 1 (true)
+PRINTSTR "\n"
 HALT`,
 
     // Calculator

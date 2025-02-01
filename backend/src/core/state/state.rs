@@ -47,7 +47,6 @@ impl VMState {
         }
     }
 
-    // Provide a method to access the private `instructions` field
     pub fn instructions(&self) -> &Vec<crate::core::instruction::Instruction> {
         &self.instructions
     }

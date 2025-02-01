@@ -1,34 +1,48 @@
-use crate::core::vm::VM;
-use crate::core::assembler::Assembler;
+use super::VMTester;
 
-pub const SOURCE: &str = r#"
-    start: PUSH 0
-    STORE counter
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    loop: LOAD counter
-    PUSH 1
-    ADD
-    STORE counter
+    #[test]
+    fn test_conditional_branching() {
+        const SOURCE: &str = r#"
+        // Initialize counter
+        start:  PUSH 1
+                STORE x
 
-    LOAD counter
-    PRINT
+        loop:   // Check if number is odd
+                LOAD x
+                PUSH 2
+                DIV
+                PUSH 2
+                MUL
+                LOAD x
+                SUB
+                PUSH -1
+                MUL        // Convert negative to positive
+                PRINT
+                PRINTSTR "\n"
 
-    LOAD counter
-    PUSH 5
-    LT
-    JMPNZ loop
+                // Increment x
+                LOAD x
+                PUSH 1
+                ADD
+                DUP
+                STORE x
 
-    end: HALT
-"#;
+                // Continue if x < 4
+                PUSH 4
+                LT
+                JMPNZ loop
 
-#[test]
-pub fn test_control_flow() {
-    let mut assembler = Assembler::new();
-    let program = assembler.assemble(SOURCE).unwrap();
-    let mut vm = VM::new(program);
+        end:    HALT
+        "#;
 
-    while let Ok(true) = vm.step() {}
+        let mut tester = VMTester::new(SOURCE, false)
+            .expect("Failed to create VM tester");
 
-    let output = vm.take_output().join("");
-    assert_eq!(output, "1\n2\n3\n4\n5\n");
+        tester.run().expect("Failed to execute program");
+        assert_eq!(tester.get_output(), "1\n0\n1\n");
+    }
 }
